@@ -1,0 +1,15 @@
+# 빌드 결과물
+/target/
+
+# 환경 설정 (비밀값 포함)
+.env
+.env.local
+.env.*.local
+
+# sqlx 오프라인 캐시 (선택적으로 커밋 가능)
+.sqlx/
+
+# IDE
+.idea/
+.vscode/
+*.iml
