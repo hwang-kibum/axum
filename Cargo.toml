@@ -4,19 +4,35 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# 웹 프레임워크 — 라우터, 핸들러, 추출기
 axum = "0.8"
+# 비동기 런타임 — Tokio multi-thread
 tokio = { version = "1", features = ["full"] }
+# DB 드라이버 — MariaDB(MySQL) 연결, 마이그레이션, chrono 타입 지원
 sqlx = { version = "0.8", features = ["runtime-tokio", "mysql", "chrono", "migrate"] }
+# 도메인별 에러 enum 정의
 thiserror = "2"
+# 구조화 로깅 매크로 (info!, error!, warn! 등)
 tracing = "0.1"
+# tracing 포맷터 + RUST_LOG 환경변수 필터
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# .env 파일 로드
 dotenvy = "0.15"
+# main 함수 최상위 에러 전파용
 anyhow = "1"
+# JSON 직렬화/역직렬화 derive
 serde = { version = "1", features = ["derive"] }
+# JSON 응답 생성 (json! 매크로 포함)
 serde_json = "1"
+# JWT 발급 및 검증
 jsonwebtoken = "9"
+# 비밀번호 해싱 (bcrypt)
 bcrypt = "0.15"
+# 날짜/시간 타입 — DB ↔ JSON 변환
 chrono = { version = "0.4", features = ["serde"] }
+# 정적 파일 서빙 (ServeDir), CORS 등 HTTP 미들웨어
 tower-http = { version = "0.6", features = ["fs"] }
+# OpenAPI 스펙 생성 — 핸들러/스키마 어노테이션
 utoipa = { version = "5", features = ["chrono"] }
+# Swagger UI 라우터 연동
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
