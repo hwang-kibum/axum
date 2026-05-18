@@ -4,44 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>게시판</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .post-row { cursor: pointer; }
-    .post-row:hover { background: #f8f9fa; }
-  </style>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav class="navbar navbar-dark bg-primary px-3">
-    <a class="navbar-brand fw-bold" href="/board.html">📋 게시판</a>
-    <div class="d-flex align-items-center gap-3">
-      <span class="text-white small" id="navUser"></span>
-      <button class="btn btn-outline-light btn-sm" onclick="logout()">로그아웃</button>
+  <nav class="navbar">
+    <a class="navbar-brand" href="/board.html">게시판</a>
+    <div class="navbar-right">
+      <span class="navbar-user" id="navUser"></span>
+      <button class="btn-nav" onclick="logout()">로그아웃</button>
     </div>
   </nav>
 
-  <div class="container mt-4" style="max-width:800px">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="mb-0 text-muted">전체 게시글 <span id="totalCount" class="fw-bold text-dark"></span></h6>
+  <div class="container">
+    <div class="board-header">
+      <p class="board-total">전체 게시글 <strong id="totalCount"></strong></p>
       <button class="btn btn-primary btn-sm" onclick="location.href='/post.html'">+ 새 글 작성</button>
     </div>
 
-    <!-- 게시글 테이블 -->
-    <table class="table table-hover align-middle">
-      <thead class="table-light">
+    <table>
+      <thead>
         <tr>
-          <th style="width:60px" class="text-center">번호</th>
+          <th class="center" style="width:60px">번호</th>
           <th>제목</th>
           <th style="width:110px">작성자</th>
-          <th style="width:120px" class="text-center">날짜</th>
+          <th class="center" style="width:110px">날짜</th>
         </tr>
       </thead>
       <tbody id="postBody">
-        <tr><td colspan="4" class="text-center py-5 text-muted">불러오는 중…</td></tr>
+        <tr><td colspan="4" class="empty">불러오는 중…</td></tr>
       </tbody>
     </table>
 
-    <!-- 페이지네이션 -->
-    <nav class="d-flex justify-content-center gap-1" id="pagination"></nav>
+    <div class="pagination" id="pagination"></div>
   </div>
 
   <script src="/js/api.js"></script>
@@ -57,44 +51,41 @@
       location.href = '/login.html';
     }
 
-    async function loadPosts(page = 1) {
+    async function loadPosts(page) {
       currentPage = page;
       const tbody = document.getElementById('postBody');
       try {
         const data = await API.posts.list(page, PER_PAGE);
-        document.getElementById('totalCount').textContent = `(${data.total})`;
+        document.getElementById('totalCount').textContent = data.total;
 
         if (data.posts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">게시글이 없습니다.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" class="empty">게시글이 없습니다.</td></tr>';
         } else {
           tbody.innerHTML = data.posts.map((p, i) => {
-            const num = data.total - (page - 1) * PER_PAGE - i;
+            const num  = data.total - (page - 1) * PER_PAGE - i;
             const date = formatDate(p.created_at).slice(0, 10);
             return `
-              <tr class="post-row" onclick="location.href='/post.html?id=${p.id}'">
-                <td class="text-center text-muted small">${num}</td>
+              <tr class="clickable" onclick="location.href='/post.html?id=${p.id}'">
+                <td class="center muted">${num}</td>
                 <td>${escapeHtml(p.title)}</td>
-                <td class="text-muted small">${escapeHtml(p.author_name)}</td>
-                <td class="text-center text-muted small">${date}</td>
+                <td class="muted">${escapeHtml(p.author_name)}</td>
+                <td class="center muted">${date}</td>
               </tr>`;
           }).join('');
         }
 
-        // 페이지네이션
         const totalPages = Math.ceil(data.total / PER_PAGE);
         const nav = document.getElementById('pagination');
-        if (totalPages <= 1) { nav.innerHTML = ''; return; }
-
-        nav.innerHTML = Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
-          <button class="btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline-secondary'}"
-            onclick="loadPosts(${p})">${p}</button>
-        `).join('');
+        nav.innerHTML = totalPages <= 1 ? '' :
+          Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
+            <button class="page-btn${p === page ? ' active' : ''}" onclick="loadPosts(${p})">${p}</button>
+          `).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">${escapeHtml(err.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--danger)">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
-    loadPosts();
+    loadPosts(1);
   </script>
 </body>
 </html>

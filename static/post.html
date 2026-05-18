@@ -3,52 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>게시글</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .content-area { white-space: pre-wrap; line-height: 1.8; }
-  </style>
+  <title>게시글 · 게시판</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav class="navbar navbar-dark bg-primary px-3">
-    <a class="navbar-brand fw-bold" href="/board.html">📋 게시판</a>
-    <span class="text-white small" id="navUser"></span>
+  <nav class="navbar">
+    <a class="navbar-brand" href="/board.html">게시판</a>
+    <span class="navbar-user" id="navUser"></span>
   </nav>
 
-  <div class="container mt-4" style="max-width:800px">
+  <div class="container">
 
     <!-- 상세 보기 -->
-    <div id="viewMode" class="d-none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <button class="btn btn-sm btn-outline-secondary" onclick="location.href='/board.html'">← 목록</button>
-        <div id="ownerButtons" class="d-none d-flex gap-2">
-          <button class="btn btn-sm btn-outline-primary" onclick="enterEdit()">수정</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="deletePost()">삭제</button>
+    <div id="viewMode" class="hidden">
+      <div class="post-toolbar">
+        <button class="btn btn-outline btn-sm" onclick="location.href='/board.html'">← 목록</button>
+        <div class="post-toolbar-right" id="ownerButtons" style="display:none">
+          <button class="btn btn-outline-primary btn-sm" onclick="enterEdit()">수정</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deletePost()">삭제</button>
         </div>
       </div>
-      <h4 id="viewTitle" class="fw-bold mb-1"></h4>
-      <div class="text-muted small mb-3" id="viewMeta"></div>
-      <hr>
-      <div id="viewContent" class="content-area mt-3"></div>
+      <div class="card">
+        <h2 class="post-title" id="viewTitle"></h2>
+        <p class="post-meta" id="viewMeta"></p>
+        <hr class="post-divider">
+        <div class="post-content" id="viewContent"></div>
+      </div>
     </div>
 
     <!-- 작성 / 수정 폼 -->
-    <div id="editMode" class="d-none">
-      <div class="d-flex align-items-center mb-3">
-        <button class="btn btn-sm btn-outline-secondary me-3" onclick="cancelEdit()">← 취소</button>
-        <h6 class="mb-0 fw-bold" id="formHeading"></h6>
+    <div id="editMode" class="hidden">
+      <div class="post-toolbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">← 취소</button>
+          <span class="form-heading" id="formHeading"></span>
+        </div>
       </div>
-      <div id="formAlert" class="alert alert-danger d-none py-2 mb-3"></div>
-      <input type="text" class="form-control mb-3" id="inputTitle" placeholder="제목">
-      <textarea class="form-control mb-3" id="inputContent" rows="15" placeholder="내용을 입력하세요"></textarea>
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" onclick="submitPost()">저장</button>
-        <button class="btn btn-secondary" onclick="cancelEdit()">취소</button>
+      <div class="card">
+        <div id="formAlert" class="alert alert-danger hidden"></div>
+        <div class="form-group">
+          <input type="text" id="inputTitle" placeholder="제목">
+        </div>
+        <div class="form-group">
+          <textarea id="inputContent" rows="16" placeholder="내용을 입력하세요"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitPost()">저장</button>
+          <button class="btn btn-outline" onclick="cancelEdit()">취소</button>
+        </div>
       </div>
     </div>
 
     <!-- 로딩 -->
-    <div id="loadingMsg" class="text-center text-muted py-5">불러오는 중…</div>
+    <p class="loading-msg" id="loadingMsg">불러오는 중…</p>
 
   </div>
 
@@ -56,30 +63,39 @@
   <script>
     document.getElementById('navUser').textContent = getMe().username;
 
-    const params   = new URLSearchParams(location.search);
-    const postId   = params.get('id') ? parseInt(params.get('id')) : null;
-    let   post     = null;   // 현재 로드된 게시글
-    let   isEdit   = false;  // true = 수정, false = 새 글
+    const params = new URLSearchParams(location.search);
+    const postId = params.get('id') ? parseInt(params.get('id')) : null;
+    let post   = null;
+    let isEdit = false;
 
-    // ── 상세 보기 렌더 ─────────────────────────────
+    function show(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function showFormAlert(msg) {
+      const el = document.getElementById('formAlert');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    function clearFormAlert() {
+      document.getElementById('formAlert').classList.add('hidden');
+    }
+
     function renderView(p) {
       post = p;
       document.title = p.title + ' · 게시판';
-      document.getElementById('viewTitle').textContent   = p.title;
-      document.getElementById('viewMeta').textContent    =
+      document.getElementById('viewTitle').textContent = p.title;
+      document.getElementById('viewMeta').textContent  =
         `${p.author_name}  ·  ${formatDate(p.created_at)}`;
       document.getElementById('viewContent').textContent = p.content;
 
-      // 작성자만 수정/삭제 버튼 표시
       if (getMe().id === p.author_id) {
-        document.getElementById('ownerButtons').classList.remove('d-none');
+        document.getElementById('ownerButtons').style.display = 'flex';
       }
 
       hide('loadingMsg');
       show('viewMode');
     }
 
-    // ── 수정 폼 진입 ──────────────────────────────
     function enterEdit() {
       if (!post) return;
       isEdit = true;
@@ -91,7 +107,6 @@
       show('editMode');
     }
 
-    // ── 새 글 쓰기 폼 ─────────────────────────────
     function showWriteForm() {
       if (!requireAuth()) return;
       isEdit = false;
@@ -113,7 +128,6 @@
       }
     }
 
-    // ── 저장 ──────────────────────────────────────
     async function submitPost() {
       const title   = document.getElementById('inputTitle').value.trim();
       const content = document.getElementById('inputContent').value.trim();
@@ -134,7 +148,6 @@
       }
     }
 
-    // ── 삭제 ──────────────────────────────────────
     async function deletePost() {
       if (!post || !confirm('게시글을 삭제하시겠습니까?')) return;
       try {
@@ -145,28 +158,13 @@
       }
     }
 
-    // ── 유틸 ──────────────────────────────────────
-    function show(id) { document.getElementById(id).classList.remove('d-none'); }
-    function hide(id) { document.getElementById(id).classList.add('d-none'); }
-
-    function showFormAlert(msg) {
-      const el = document.getElementById('formAlert');
-      el.className = 'alert alert-danger py-2 mb-3';
-      el.textContent = msg;
-    }
-    function clearFormAlert() {
-      document.getElementById('formAlert').className = 'alert alert-danger d-none py-2 mb-3';
-    }
-
-    // ── 진입점 ────────────────────────────────────
     (async () => {
       if (postId) {
         try {
-          const p = await API.posts.get(postId);
-          renderView(p);
+          renderView(await API.posts.get(postId));
         } catch (err) {
           document.getElementById('loadingMsg').innerHTML =
-            `<span class="text-danger">${escapeHtml(err.message)}</span>`;
+            `<span style="color:var(--danger)">${escapeHtml(err.message)}</span>`;
         }
       } else {
         showWriteForm();
